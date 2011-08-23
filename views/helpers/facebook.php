@@ -475,7 +475,7 @@ window.fbAsyncInit = function() {
 };
 (function() {
 	var e = document.createElement('script');
-	e.src = document.location.protocol + '//connect.facebook.net/{$this->locale}/all.js#appId={$appId}&amp;xfbml=1';
+	e.src = document.location.protocol + '//connect.facebook.net/{$this->locale}/all.js';
 	e.async = true;
 	document.getElementById('fb-root').appendChild(e);
 }());
