@@ -37,6 +37,11 @@ class ConnectComponent extends Object {
 	* No Auth, if set to true, syncFacebookUser will NOT be called
 	*/
 	var $noAuth = false;
+
+	/**
+	* Check Email, if set to true, syncFacebookUser will look for user with the Facebook email
+	*/
+	var $checkEmail = false;
 	
 	/**
 	* Error log
@@ -134,17 +139,28 @@ class ConnectComponent extends Object {
 		else {
 			// attempt to find the user by their facebook id
 			$this->authUser = $this->User->findByFacebookId($this->uid);
-			
+			$email = $this->user('email');
+			if(!$this->authUser && $this->checkEmail && $this->User->hasField('email') && $email && !empty($email)){
+				$this->authUser = $this->User->findByEmail($email);
+				if(empty($this->authUser['User']['facebook_id']))
+					if($this->User->save(array('id' => $this->authUser['User']['id'], 'facebook_id' => $this->uid)))
+						$this->authUser['User']['facebook_id'] = $this->uid;
+			}
+				
 			//if we have a user, set hasAccount
 			if(!empty($this->authUser)){
 				$this->hasAccount = true;
 			}
 			//create the user if we don't have one
-			elseif(empty($this->authUser) && $this->createUser) {
+			elseif(!$this->authUser && $this->createUser) {
 				$this->authUser[$this->User->alias]['facebook_id'] = $this->uid;
 				$this->authUser[$this->User->alias][$Auth->fields['password']] = $Auth->password(FacebookInfo::randPass());
 				if($this->__runCallback('beforeFacebookSave')){
 					$this->hasAccount = ($this->User->save($this->authUser, array('validate' => false)));
+					if($this->hasAccount){
+						$this->authUser[$this->User->alias]["id"] = $this->User->id;
+						$this->__runCallback('afterFacebookSave');
+					}
 				}
 				else {
 					$this->authUser = null;
